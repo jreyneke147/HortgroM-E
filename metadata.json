@@ -1,0 +1,8 @@
+
+{
+  "name": "Hortgro M&E Platform",
+  "description": "An integrated Monitoring & Evaluation platform for Hortgro, featuring longitudinal data tracking, GIS mapping, and KPI management across Economic, Social, Environmental, and Institutional pillars.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
