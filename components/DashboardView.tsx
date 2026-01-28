@@ -1,12 +1,10 @@
 
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
+import React, { useState } from 'react';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { PILLAR_META } from '../constants';
-import { PillarType } from '../types';
+import { PillarType, Programme } from '../types';
 import { 
   ArrowUpRight, 
-  ArrowDownRight, 
-  Minus, 
   Calendar, 
   ChevronRight,
   Target,
@@ -25,7 +23,48 @@ const MOCK_TIME_DATA = [
   { name: '2024', eco: 2390, soc: 3800, env: 2500, ins: 2800 },
 ];
 
-const DashboardView: React.FC = () => {
+interface DashboardViewProps {
+  onNavigate?: (tab: string) => void;
+  onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
+  programmes: Programme[];
+}
+
+const periods = ['2021-2022', '2022-2023', '2023-2024'];
+
+const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onToast, programmes }) => {
+  const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(2);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handlePeriodChange = () => {
+    const nextIndex = (selectedPeriodIndex + 1) % periods.length;
+    setSelectedPeriodIndex(nextIndex);
+    onToast?.(`Reporting period set to ${periods[nextIndex]}.`, 'info');
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const summary = programmes.map((programme) => `• ${programme.name}: ${programme.projects.length} projects`).join('\n');
+      const blob = new Blob([`Executive Dashboard Export (${periods[selectedPeriodIndex]})\n\n${summary}`], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `hortgro-dashboard-${periods[selectedPeriodIndex]}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onToast?.('Dashboard export ready.', 'success');
+    } catch (error) {
+      onToast?.('Unable to export the report. Please retry.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleViewAll = () => {
+    onNavigate?.('programmes');
+    onToast?.('Showing all active programmes.', 'info');
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page Header */}
@@ -35,13 +74,20 @@ const DashboardView: React.FC = () => {
           <p className="text-gray-500 mt-1">Cross-programme performance across the four strategic pillars.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+          <button
+            onClick={handlePeriodChange}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+          >
             <Calendar size={16} />
-            Period: 2023-2024
+            Period: {periods[selectedPeriodIndex]}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors shadow-md">
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors shadow-md disabled:opacity-60"
+          >
             <FileDown size={16} />
-            Export PDF Report
+            {isExporting ? 'Preparing export...' : 'Export PDF Report'}
           </button>
         </div>
       </div>
@@ -157,7 +203,10 @@ const DashboardView: React.FC = () => {
       <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
           <h3 className="font-bold text-slate-800">Critical Project Status</h3>
-          <button className="text-green-600 text-sm font-bold flex items-center gap-1 hover:underline">
+          <button
+            onClick={handleViewAll}
+            className="text-green-600 text-sm font-bold flex items-center gap-1 hover:underline"
+          >
             View All Projects <ChevronRight size={16} />
           </button>
         </div>
